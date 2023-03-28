@@ -6,6 +6,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -23,6 +24,9 @@ public class AwsSpringFunctionApplication {
 	@Autowired
 	private EmployeeRepository employeeRepository;
 
+	@Autowired
+	private RedissonClient redisson;
+
 	@Bean
 	public Supplier<List<Employee>> getEmployees() {
 		return () -> employeeRepository.employeeList();
@@ -38,9 +42,10 @@ public class AwsSpringFunctionApplication {
 	public Function<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> getAPIResponse() {
 		return (req) -> {
 			APIGatewayProxyResponseEvent res = new APIGatewayProxyResponseEvent();
-			res.setBody(req.getBody());
 			res.setStatusCode(201);
-			res.setHeaders(Collections.singletonMap("Content-type:","application/json"));
+			res.setHeaders(Collections.singletonMap("Content-type:", "application/json"));
+			String value = redisson.getBucket("my-key").get().toString();
+			res.setBody(req.getBody()+"===="+value);
 			return res;
 		};
 	}
